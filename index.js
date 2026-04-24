@@ -22,28 +22,24 @@ const createLoginTracker = (userInfo) => {
      * @returns {string} A message indicating the result of the login attempt.
      */
     const loginAttempt = (passwordAttempt) => {
-        // Increment the attempt count each time this function is called.
-        // This is done before any checks to accurately reflect the attempt number.
-        attemptCount++;
-
-        // Check if the account is already locked due to exceeding max attempts (3).
-        if (attemptCount > 3) {
+        // Check if the account is already locked before incrementing attempts
+        if (attemptCount >= 3) {
             return "Account locked due to too many failed login attempts";
         }
+        
+        // Increment the attempt count each time this function is called
+        attemptCount++;
 
-        // Verify if the provided password matches the stored password.
-        // If a match is found, return a success message.
+        // Verify if the provided password matches the stored password
         if (passwordAttempt === userInfo.password) {
             return "Login successful";
         } else {
-            // If the password is incorrect, return a failure message.
-            // The message includes the current attempt number for clarity.
-            return `Login failed - Attempt ${attemptCount} of 3`;
+            // Return exact format expected by tests
+            return `Attempt ${attemptCount}: Login failed`;
         }
     };
 
-    // Return the inner function so it can be called from outside.
-    // This creates a closure that preserves the state of `attemptCount`.
+    // Return the inner function so it can be called from outside
     return loginAttempt;
 };
 
@@ -57,35 +53,44 @@ const testUser = {
 };
 
 // Generate the login function for this specific user.
-// `login` now has its own private `attemptCount` for this user.
 const login = createLoginTracker(testUser);
 
 console.log("--- Test Scenario: Failed attempts then lockout ---");
-console.log(login("wrong"));      // Expected: Login failed - Attempt 1 of 3
-console.log(login("wrong"));      // Expected: Login failed - Attempt 2 of 3
-console.log(login("wrong"));      // Expected: Login failed - Attempt 3 of 3
+console.log(login("wrong"));      // Expected: Attempt 1: Login failed
+console.log(login("wrong"));      // Expected: Attempt 2: Login failed
+console.log(login("wrong"));      // Expected: Attempt 3: Login failed
 console.log(login("wrong"));      // Expected: Account locked due to too many failed login attempts
 console.log(login("password123")); // Expected: Account locked (already locked)
 
 console.log("\n--- Test Scenario: Successful login without lockout ---");
-// Create a separate user instance to demonstrate a fresh attempt counter.
+// Create a separate user instance to demonstrate a fresh attempt counter
 const anotherUser = {
     username: "customer1",
     password: "securePass"
 };
 const anotherLogin = createLoginTracker(anotherUser);
-console.log(anotherLogin("wrongAttempt")); // Expected: Login failed - Attempt 1 of 3
+console.log(anotherLogin("wrongAttempt")); // Expected: Attempt 1: Login failed
 console.log(anotherLogin("securePass"));   // Expected: Login successful
 
-console.log("\n--- Test Scenario: Edge Cases (Empty Password) ---");
-const emptyPasswordUser = {
-    username: "test",
-    password: ""
+console.log("\n--- Test Scenario: Correct login after one failure ---");
+const thirdUser = {
+    username: "testuser",
+    password: "correct123"
 };
-const emptyPassLogin = createLoginTracker(emptyPasswordUser);
-console.log(emptyPassLogin(""));    // Expected: Login successful (empty string matches)
-console.log(emptyPassLogin("any")); // Expected: Login failed - Attempt 2 of 3
-console.log(emptyPassLogin(""));    // Expected: Account locked (3rd attempt fails)
+const thirdLogin = createLoginTracker(thirdUser);
+console.log(thirdLogin("wrong"));     // Expected: Attempt 1: Login failed
+console.log(thirdLogin("correct123")); // Expected: Login successful
 
-// --- Export for Testing (if this file is used in a testing environment) ---
+console.log("\n--- Test Scenario: Account locks after third failure ---");
+const fourthUser = {
+    username: "locktest",
+    password: "mypass"
+};
+const fourthLogin = createLoginTracker(fourthUser);
+console.log(fourthLogin("wrong1")); // Expected: Attempt 1: Login failed
+console.log(fourthLogin("wrong2")); // Expected: Attempt 2: Login failed
+console.log(fourthLogin("wrong3")); // Expected: Attempt 3: Login failed
+console.log(fourthLogin("mypass")); // Expected: Account locked due to too many failed login attempts
+
+// --- Export for Testing ---
 module.exports = { createLoginTracker };
